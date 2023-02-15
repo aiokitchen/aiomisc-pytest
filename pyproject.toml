@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "aiomisc-pytest"
 license = "MIT"
-version = "1.0.0"
+version = "1.0.6"
 description = "pytest integration for aiomisc"
 authors = ["Dmitry Orlov <me@mosquito.su>"]
 readme = "README.md"
@@ -50,7 +50,7 @@ aiomisc_pytest = "aiomisc_pytest"
 [tool.poem-plugins.version]
 provider = "git"
 update_pyproject = true
-write_version_file = true
+write_version_file = false
 
 [tool.mypy]
 check_untyped_defs = true

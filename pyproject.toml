@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "aiomisc-pytest"
 license = "MIT"
-version = "1.0.6"
+version = "1.0.7"
 description = "pytest integration for aiomisc"
 authors = ["Dmitry Orlov <me@mosquito.su>"]
 readme = "README.md"

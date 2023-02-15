@@ -32,17 +32,20 @@ python = "^3.7"
 pytest = "^7.2.1"
 aiomisc = ">=16"
 
+[tool.poetry.group.uvloop.dependencies]
+uvloop = "^0.17.0"
+
 [tool.poetry.group.dev.dependencies]
 pylama = "^8.4.1"
 mypy = "^1.0.0"
-uvloop = "^0.17.0"
+pytest-cov = "^4.0.0"
 
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.plugins.pytest11]
-aiomisc = "aiomisc_pytest"
+aiomisc_pytest = "aiomisc_pytest"
 
 [tool.poem-plugins.version]
 provider = "git"

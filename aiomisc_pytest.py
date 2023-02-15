@@ -454,10 +454,6 @@ def pytest_configure(config: pytest.Config) -> None:
 
 def pytest_addoption(parser: pytest.Parser) -> None:
     group = parser.getgroup("aiomisc plugin options")
-    group.addoption(
-        "--no-aiomisc", action="store_false", dest="aiomisc",
-        help="Use aiomisc entrypoint for run async tests",
-    )
 
     group.addoption(
         "--aiomisc-debug", action="store_true", default=False,

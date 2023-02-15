@@ -1,8 +1,8 @@
 [tool.poetry]
 name = "aiomisc-pytest"
-license = "Apache-2.0"
+license = "MIT"
 version = "1.0.0"
-description = ""
+description = "pytest integration for aiomisc"
 authors = ["Dmitry Orlov <me@mosquito.su>"]
 readme = "README.md"
 packages = [{include = "aiomisc_pytest.py"}]
@@ -29,9 +29,11 @@ classifiers = [
 
 [tool.poetry.dependencies]
 python = "^3.7"
-aiomisc = "^16.3.15"
-pytest = "^7.2.1"
+aiomisc = ">=16"
 
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.2.1"
 
 [build-system]
 requires = ["poetry-core"]

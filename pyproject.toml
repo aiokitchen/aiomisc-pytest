@@ -1,0 +1,41 @@
+[tool.poetry]
+name = "aiomisc-pytest"
+license = "Apache-2.0"
+version = "1.0.0"
+description = ""
+authors = ["Dmitry Orlov <me@mosquito.su>"]
+readme = "README.md"
+packages = [{include = "aiomisc_pytest.py"}]
+keywords=["pytest", "aiomisc"]
+classifiers = [
+    "Environment :: Plugins",
+    "Framework :: Pytest",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Natural Language :: English",
+    "Operating System :: MacOS",
+    "Operating System :: Microsoft",
+    "Operating System :: POSIX",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Topic :: Software Development :: Libraries",
+    "Topic :: Software Development",
+]
+
+[tool.poetry.dependencies]
+python = "^3.7"
+aiomisc = "^16.3.15"
+pytest = "^7.2.1"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.plugins.pytest11]
+aiomisc = "aiomisc_pytest"

@@ -36,6 +36,7 @@ aiomisc = ">=16"
 pylama = "^8.4.1"
 mypy = "^1.0.0"
 uvloop = "^0.17.0"
+pytest-cov = "^4.0.0"
 
 [build-system]
 requires = ["poetry-core"]

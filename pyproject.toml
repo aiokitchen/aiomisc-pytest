@@ -29,11 +29,13 @@ classifiers = [
 
 [tool.poetry.dependencies]
 python = "^3.7"
+pytest = "^7.2.1"
 aiomisc = ">=16"
 
-
 [tool.poetry.group.dev.dependencies]
-pytest = "^7.2.1"
+pylama = "^8.4.1"
+mypy = "^1.0.0"
+uvloop = "^0.17.0"
 
 [build-system]
 requires = ["poetry-core"]
@@ -41,3 +43,24 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.plugins.pytest11]
 aiomisc = "aiomisc_pytest"
+
+[tool.poem-plugins.version]
+provider = "git"
+update_pyproject = true
+write_version_file = true
+
+[tool.mypy]
+check_untyped_defs = true
+disallow_any_generics = false
+disallow_incomplete_defs = true
+disallow_subclassing_any = true
+disallow_untyped_calls = true
+disallow_untyped_decorators = true
+disallow_untyped_defs = true
+follow_imports = "silent"
+no_implicit_reexport = true
+strict_optional = true
+warn_redundant_casts = true
+warn_unused_configs = true
+warn_unused_ignores = true
+files = ["aiomisc_pytest.py"]

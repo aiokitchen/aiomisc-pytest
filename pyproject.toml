@@ -45,7 +45,7 @@ requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.plugins.pytest11]
-aiomisc = "aiomisc_pytest"
+aiomisc_pytest = "aiomisc_pytest"
 
 [tool.poem-plugins.version]
 provider = "git"

@@ -60,8 +60,6 @@ jobs:
             -vv \
             --cov=aiomisc_pytest \
             --cov-report=term-missing \
-            --doctest-modules \
-            --aiomisc-test-timeout=120 \
             tests
         env:
           FORCE_COLOR: 1

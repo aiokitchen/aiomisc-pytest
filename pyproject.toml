@@ -30,7 +30,7 @@ classifiers = [
 [tool.poetry.dependencies]
 python = "^3.7"
 pytest = "^7.2.1"
-aiomisc = ">=16"
+aiomisc = ">=17"
 
 [tool.poetry.group.uvloop.dependencies]
 uvloop = "^0.17.0"

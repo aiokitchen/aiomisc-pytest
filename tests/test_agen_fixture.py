@@ -6,7 +6,7 @@ from aiomisc import entrypoint
 class TestSessionScopeAsyncGenFixture:
 
     @pytest.fixture(scope="session")
-    def loop(self):
+    def event_loop(self):
         with entrypoint() as loop:
             yield loop
 

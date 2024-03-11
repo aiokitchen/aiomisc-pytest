@@ -6,7 +6,7 @@ from typing import Callable
 import pytest
 
 from aiomisc import Service
-from aiomisc_pytest.pytest_plugin import PortSocket
+from aiomisc_pytest import PortSocket
 
 
 class _TestService(Service):

@@ -3,6 +3,12 @@ aiomisc pytest plugin
 
 This package contains a plugin for pytest.
 
+## Installation
+
+```bash
+# pip install aiomisc-pytest
+```
+
 ## Basic usage
 
 Simple usage example:

@@ -87,7 +87,7 @@ def delayed_future(
     loop = asyncio.get_event_loop()
 
     def resolve(f: asyncio.Future) -> None:
-        nonlocal result
+        nonlocal result     # noqa
 
         if f.done():
             return
@@ -646,7 +646,7 @@ def event_loop(
     exceptions: List[Dict[str, Any]] = []
 
     def catch_exceptions(_: Any, catched: Dict[str, Any]) -> None:
-        nonlocal exceptions
+        nonlocal exceptions   # noqa
         exceptions.append(catched)
 
     try:

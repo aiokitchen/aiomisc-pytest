@@ -87,7 +87,7 @@ def delayed_future(
     loop = asyncio.get_event_loop()
 
     def resolve(f: asyncio.Future) -> None:
-        nonlocal result
+        nonlocal result     # noqa
 
         if f.done():
             return
@@ -209,8 +209,8 @@ class TCPProxy:
                 client, read, write,
             )
 
-            client.read_processor = read        # type: ignore
-            client.write_processor = write      # type: ignore
+            client.read_processor = read
+            client.write_processor = write
 
         self.read_processor = read
         self.write_processor = write
@@ -235,8 +235,8 @@ class TCPProxy:
 
         client.read_delay.timeout = self.read_delay
         client.write_delay.timeout = self.write_delay
-        client.read_processor = self.read_processor     # type: ignore
-        client.write_processor = self.write_processor   # type: ignore
+        client.read_processor = self.read_processor
+        client.write_processor = self.write_processor
 
         await client.connect(self.target_host, self.target_port)
 
@@ -646,7 +646,7 @@ def event_loop(
     exceptions: List[Dict[str, Any]] = []
 
     def catch_exceptions(_: Any, catched: Dict[str, Any]) -> None:
-        nonlocal exceptions
+        nonlocal exceptions   # noqa
         exceptions.append(catched)
 
     try:

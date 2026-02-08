@@ -6,15 +6,21 @@ import os
 import platform
 import socket
 import sys
-import warnings
-from asyncio.events import get_event_loop
+from collections.abc import (
+    AsyncGenerator,
+    Awaitable,
+    Callable,
+    Generator,
+    Iterable,
+    Mapping,
+)
 from contextlib import contextmanager, suppress
 from functools import partial, wraps
-from inspect import isasyncgenfunction
+from inspect import isasyncgenfunction, iscoroutinefunction
 from types import ModuleType
 from typing import (
-    Any, AsyncGenerator, Awaitable, Callable, Dict, Generator, Iterable, List,
-    Mapping, NamedTuple, Optional, Set, Tuple, Type, Union,
+    Any,
+    NamedTuple,
 )
 from unittest.mock import MagicMock
 
@@ -24,19 +30,21 @@ from aiomisc.compat import set_current_loop, sock_set_reuseport
 from aiomisc.utils import TimeoutType, bind_socket
 from aiomisc_log import LOG_LEVEL, basic_config
 
-
 log = logging.getLogger("aiomisc_pytest")
 
 
-USE_UVLOOP = (
-    os.getenv("AIOMISC_USE_UVLOOP", "1").lower() in ("1", "yes", "true")
+USE_UVLOOP = os.getenv("AIOMISC_USE_UVLOOP", "1").lower() in (
+    "1",
+    "yes",
+    "true",
 )
 
-uvloop_module: Optional[ModuleType]
+uvloop_module: ModuleType | None
 
 try:
     if USE_UVLOOP:
         import uvloop as _uvloop
+
         uvloop_module = _uvloop
 except ImportError:
     uvloop_module = None
@@ -50,12 +58,12 @@ class Delay:
     __slots__ = "__timeout", "future", "lock"
 
     def __init__(self) -> None:
-        self.__timeout: Union[int, float] = 0
-        self.future: Optional[asyncio.Future] = None
+        self.__timeout: int | float = 0
+        self.future: asyncio.Future | None = None
         self.lock = asyncio.Lock()
 
     @property
-    def timeout(self) -> Union[int, float]:
+    def timeout(self) -> int | float:
         return self.__timeout
 
     @timeout.setter
@@ -81,13 +89,14 @@ class Delay:
 
 
 def delayed_future(
-    timeout: Union[int, float], result: bool = True,
+    timeout: int | float,
+    result: bool = True,
 ) -> asyncio.Future:
 
     loop = asyncio.get_event_loop()
 
     def resolve(f: asyncio.Future) -> None:
-        nonlocal result     # noqa
+        nonlocal result  # noqa
 
         if f.done():
             return
@@ -104,14 +113,26 @@ class TCPProxy:
     DEFAULT_TIMEOUT = 30
 
     __slots__ = (
-        "proxy_port", "clients", "server", "proxy_host",
-        "target_port", "target_host", "listen_host", "read_delay",
-        "write_delay", "read_processor", "write_processor", "buffered",
+        "proxy_port",
+        "clients",
+        "server",
+        "proxy_host",
+        "target_port",
+        "target_host",
+        "listen_host",
+        "read_delay",
+        "write_delay",
+        "read_processor",
+        "write_processor",
+        "buffered",
     )
 
     def __init__(
-            self, target_host: str, target_port: int,
-            listen_host: str = "127.0.0.1", buffered: bool = True,
+        self,
+        target_host: str,
+        target_port: int,
+        listen_host: str = "127.0.0.1",
+        buffered: bool = True,
     ):
         self.target_port = target_port
         self.target_host = target_host
@@ -121,21 +142,18 @@ class TCPProxy:
         self.write_delay: TimeoutType = 0
         self.buffered = buffered
 
-        self.clients: Set[TCPProxyClient] = set()
-        self.server: Optional[asyncio.AbstractServer] = None
+        self.clients: set[TCPProxyClient] = set()
+        self.server: asyncio.AbstractServer | None = None
 
-        self.read_processor: Optional[ProxyProcessorType] = None
-        self.write_processor: Optional[ProxyProcessorType] = None
+        self.read_processor: ProxyProcessorType | None = None
+        self.write_processor: ProxyProcessorType | None = None
 
     def __repr__(self) -> str:
-        return "<{}[{:x}]: tcp://{}:{} => tcp://{}:{}>".format(
-            self.__class__.__name__, id(self),
-            self.proxy_host, self.proxy_port,
-            self.target_host, self.target_port,
-        )
+        return f"<{self.__class__.__name__}[{id(self):x}]: tcp://{self.proxy_host}:{self.proxy_port} => tcp://{self.target_host}:{self.target_port}>"
 
     async def start(
-        self, timeout: Optional[TimeoutType] = None,
+        self,
+        timeout: TimeoutType | None = None,
     ) -> asyncio.AbstractServer:
         log.debug("Starting %r", self)
         server = await asyncio.wait_for(
@@ -143,17 +161,19 @@ class TCPProxy:
                 self._handle_client,
                 host=self.proxy_host,
                 port=self.proxy_port,
-            ), timeout=timeout,
+            ),
+            timeout=timeout,
         )
         self.server = server
         return server
 
-    ClientType = Tuple[asyncio.StreamReader, asyncio.StreamWriter]
+    ClientType = tuple[asyncio.StreamReader, asyncio.StreamWriter]
 
     async def create_client(self) -> ClientType:
         log.debug("Creating client for %r", self)
         return await asyncio.open_connection(
-            self.proxy_host, self.proxy_port,
+            self.proxy_host,
+            self.proxy_port,
         )
 
     async def __aenter__(self) -> "TCPProxy":
@@ -162,11 +182,14 @@ class TCPProxy:
         return self
 
     async def __aexit__(
-        self, exc_type: Type[Exception], exc_val: Exception, exc_tb: Any,
+        self,
+        exc_type: type[Exception],
+        exc_val: Exception,
+        exc_tb: Any,
     ) -> None:
         await self.close(timeout=self.DEFAULT_TIMEOUT)
 
-    async def close(self, timeout: Optional[TimeoutType] = None) -> None:
+    async def close(self, timeout: TimeoutType | None = None) -> None:
         async def close() -> None:
             await self.disconnect_all()
 
@@ -179,14 +202,18 @@ class TCPProxy:
         await asyncio.wait_for(close(), timeout=timeout)
 
     def set_delay(
-        self, read_delay: TimeoutType, write_delay: TimeoutType = 0,
+        self,
+        read_delay: TimeoutType,
+        write_delay: TimeoutType = 0,
     ) -> None:
         log.debug("Setting delay [R/W %f %f]", read_delay, write_delay)
 
         for client in self.clients:
             log.debug(
                 "Applying delays [R/W: %f %f] for %r",
-                read_delay, write_delay, client,
+                read_delay,
+                write_delay,
+                client,
             )
             client.read_delay.timeout = read_delay
             client.write_delay.timeout = write_delay
@@ -195,18 +222,23 @@ class TCPProxy:
         self.write_delay = write_delay
 
     def set_content_processors(
-        self, read: Optional[ProxyProcessorType],
-        write: Optional[ProxyProcessorType],
+        self,
+        read: ProxyProcessorType | None,
+        write: ProxyProcessorType | None,
     ) -> None:
         log.debug(
             "Setting content processors for %r: read=%r write=%r",
-            self, read, write,
+            self,
+            read,
+            write,
         )
 
         for client in self.clients:
             log.debug(
                 "Applying context processors for %r: read=%r write=%r",
-                client, read, write,
+                client,
+                read,
+                write,
             )
 
             client.read_processor = read
@@ -217,7 +249,9 @@ class TCPProxy:
 
     def disconnect_all(self) -> asyncio.Future:
         log.debug(
-            "Disconnecting %s clients of %r", len(self.clients), self,
+            "Disconnecting %s clients of %r",
+            len(self.clients),
+            self,
         )
         return asyncio.ensure_future(
             asyncio.gather(
@@ -227,7 +261,8 @@ class TCPProxy:
         )
 
     async def _handle_client(
-        self, reader: asyncio.StreamReader,
+        self,
+        reader: asyncio.StreamReader,
         writer: asyncio.StreamWriter,
     ) -> None:
         client = TCPProxyClient(reader, writer, buffered=self.buffered)
@@ -246,7 +281,9 @@ class TCPProxy:
 
     @contextmanager
     def slowdown(
-        self, read_delay: TimeoutType = 0, write_delay: TimeoutType = 0,
+        self,
+        read_delay: TimeoutType = 0,
+        write_delay: TimeoutType = 0,
     ) -> Generator[None, None, None]:
         old_read_delay = self.read_delay
         old_write_delay = self.write_delay
@@ -261,11 +298,19 @@ class TCPProxy:
 
 class TCPProxyClient:
     __slots__ = (
-        "client_reader", "client_writer",
-        "server_reader", "server_writer",
-        "chunk_size", "tasks", "loop",
-        "read_delay", "write_delay", "closing",
-        "__processors", "__client_repr", "__server_repr",
+        "client_reader",
+        "client_writer",
+        "server_reader",
+        "server_writer",
+        "chunk_size",
+        "tasks",
+        "loop",
+        "read_delay",
+        "write_delay",
+        "closing",
+        "__processors",
+        "__client_repr",
+        "__server_repr",
         "buffered",
     )
 
@@ -274,17 +319,19 @@ class TCPProxyClient:
         return body
 
     def __init__(
-        self, client_reader: asyncio.StreamReader,
+        self,
+        client_reader: asyncio.StreamReader,
         client_writer: asyncio.StreamWriter,
-        chunk_size: int = 64 * 1024, buffered: bool = False,
+        chunk_size: int = 64 * 1024,
+        buffered: bool = False,
     ):
 
         self.loop = asyncio.get_event_loop()
         self.client_reader: asyncio.StreamReader = client_reader
         self.client_writer: asyncio.StreamWriter = client_writer
 
-        self.server_reader: Optional[asyncio.StreamReader] = None
-        self.server_writer: Optional[asyncio.StreamWriter] = None
+        self.server_reader: asyncio.StreamReader | None = None
+        self.server_writer: asyncio.StreamWriter | None = None
 
         self.tasks: Iterable[asyncio.Task] = ()
         self.chunk_size = chunk_size  # type: int
@@ -292,8 +339,9 @@ class TCPProxyClient:
         self.write_delay = Delay()
 
         self.closing: asyncio.Future = self.loop.create_future()
-        self.__processors: Dict[str, ProxyProcessorType] = {
-            "read": self._blank_processor, "write": self._blank_processor,
+        self.__processors: dict[str, ProxyProcessorType] = {
+            "read": self._blank_processor,
+            "write": self._blank_processor,
         }
 
         self.buffered = bool(buffered)
@@ -306,7 +354,7 @@ class TCPProxyClient:
         return self.__processors["read"]
 
     @read_processor.setter
-    def read_processor(self, value: Optional[ProxyProcessorType]) -> None:
+    def read_processor(self, value: ProxyProcessorType | None) -> None:
         if value is None:
             self.__processors["read"] = self._blank_processor
             return
@@ -317,17 +365,14 @@ class TCPProxyClient:
         return self.__processors["write"]
 
     @write_processor.setter
-    def write_processor(self, value: Optional[ProxyProcessorType]) -> None:
+    def write_processor(self, value: ProxyProcessorType | None) -> None:
         if value is None:
             self.__processors["write"] = self._blank_processor
             return
         self.__processors["write"] = aiomisc.awaitable(value)
 
     def __repr__(self) -> str:
-        return "<{}[{:x}]: {} => {}>".format(
-            self.__class__.__name__, id(self),
-            self.__client_repr, self.__server_repr,
-        )
+        return f"<{self.__class__.__name__}[{id(self):x}]: {self.__client_repr} => {self.__server_repr}>"
 
     @staticmethod
     async def _close_writer(writer: asyncio.StreamWriter) -> None:
@@ -335,7 +380,8 @@ class TCPProxyClient:
         await writer.wait_closed()
 
     async def pipe(
-        self, reader: asyncio.StreamReader,
+        self,
+        reader: asyncio.StreamReader,
         writer: asyncio.StreamWriter,
         processor: str,
         delay: Delay,
@@ -350,7 +396,9 @@ class TCPProxyClient:
                 if delay.timeout > 0:
                     log.debug(
                         "%r sleeping %.3f seconds on %s",
-                        self, delay.timeout, processor,
+                        self,
+                        delay.timeout,
+                        processor,
                     )
 
                     await delay.wait()
@@ -366,7 +414,8 @@ class TCPProxyClient:
         log.debug("Establishing connection for %r", self)
 
         self.server_reader, self.server_writer = await asyncio.open_connection(
-            host=target_host, port=target_port,
+            host=target_host,
+            port=target_port,
         )
 
         self.__client_repr = ":".join(
@@ -408,32 +457,31 @@ class TCPProxyClient:
 def unused_port(*args: Any) -> int:
     with socket.socket(*args) as sock:
         sock.bind(("", 0))
-        port = sock.getsockname()[1]
-    return port
+        return sock.getsockname()[1]
 
 
 @contextmanager
 def mock_get_event_loop() -> Generator[Any, MagicMock, None]:
-    loop_getter = get_event_loop
+    original_get_event_loop = asyncio.get_event_loop
     getter_mock = MagicMock(asyncio.get_event_loop)
-    getter_mock.side_effect = loop_getter
+    getter_mock.side_effect = original_get_event_loop
 
     try:
         asyncio.get_event_loop = getter_mock
         yield getter_mock
     finally:
-        asyncio.get_event_loop = get_event_loop
+        asyncio.get_event_loop = original_get_event_loop
 
 
 @pytest.fixture(scope="session")
-def tcp_proxy() -> Type[TCPProxy]:
+def tcp_proxy() -> type[TCPProxy]:
     return TCPProxy
 
 
-def isasyncgenerator(func: Callable[..., Any]) -> Optional[bool]:
+def isasyncgenerator(func: Callable[..., Any]) -> bool | None:
     if isasyncgenfunction(func):
         return True
-    elif asyncio.iscoroutinefunction(func):
+    if iscoroutinefunction(func):
         return False
     return None
 
@@ -456,17 +504,23 @@ def pytest_addoption(parser: pytest.Parser) -> None:
     group = parser.getgroup("aiomisc plugin options")
 
     group.addoption(
-        "--aiomisc-debug", action="store_true", default=False,
+        "--aiomisc-debug",
+        action="store_true",
+        default=False,
         help="Set debug for event loop",
     )
 
     group.addoption(
-        "--aiomisc-pool-size", type=int, default=4,
+        "--aiomisc-pool-size",
+        type=int,
+        default=4,
         help="Default thread pool size",
     )
 
     group.addoption(
-        "--aiomisc-test-timeout", type=float, default=None,
+        "--aiomisc-test-timeout",
+        type=float,
+        default=None,
         help="Test timeout",
     )
 
@@ -491,10 +545,7 @@ def pytest_fixture_setup(fixturedef, request):  # type: ignore
     loop_fixturedef = request._get_active_fixturedef("event_loop")
 
     def wrapper(*args, **kwargs):  # type: ignore
-        if strip_request:
-            request = kwargs.pop("request")
-        else:
-            request = kwargs["request"]
+        request = kwargs.pop("request") if strip_request else kwargs["request"]
 
         event_loop = request.getfixturevalue("event_loop")
 
@@ -544,7 +595,7 @@ def loop_debug(pytestconfig: pytest.Config) -> bool:
 @pytest.fixture(scope="session")
 def aiomisc_test_timeout(
     pytestconfig: pytest.Config,
-) -> Optional[Union[int, float]]:
+) -> int | float | None:
     return pytestconfig.getoption("--aiomisc-test-timeout")
 
 
@@ -554,22 +605,25 @@ def aiomisc_func_wrap() -> Callable:
 
 
 def pytest_pycollect_makeitem(collector, name, obj):  # type: ignore
-    if collector.funcnamefilter(name) and asyncio.iscoroutinefunction(obj):
+    if collector.funcnamefilter(name) and iscoroutinefunction(obj):
         return list(collector._genfunctions(name, obj))
+    return None
 
 
 @pytest.mark.tryfirst
 def pytest_pyfunc_call(pyfuncitem):  # type: ignore
-    if not asyncio.iscoroutinefunction(pyfuncitem.function):
-        return
+    if not iscoroutinefunction(pyfuncitem.function):
+        return None
 
     event_loop = pyfuncitem.funcargs.get("event_loop", None)
     func_wraper = pyfuncitem.funcargs.get(
-        "aiomisc_func_wrap", aiomisc.awaitable,
+        "aiomisc_func_wrap",
+        aiomisc.awaitable,
     )
 
     aiomisc_test_timeout = pyfuncitem.funcargs.get(
-        "aiomisc_test_timeout", None,
+        "aiomisc_test_timeout",
+        None,
     )
 
     kwargs = {
@@ -608,16 +662,10 @@ loop_autouse = os.getenv("AIOMISC_LOOP_AUTOUSE", "1") == "1"
 
 
 @pytest.fixture(name="thread_pool_executor")
-def _thread_pool_executor() -> Type[concurrent.futures.ThreadPoolExecutor]:
+def _thread_pool_executor() -> type[concurrent.futures.ThreadPoolExecutor]:
     from aiomisc.thread_pool import ThreadPoolExecutor
+
     return ThreadPoolExecutor
-
-
-@pytest.fixture(autouse=loop_autouse, name="event_loop_policy")
-def _event_loop_policy() -> asyncio.AbstractEventLoopPolicy:
-    if USE_UVLOOP and uvloop_module is not None:
-        return uvloop_module.EventLoopPolicy()
-    return asyncio.DefaultEventLoopPolicy()
 
 
 @pytest.fixture(name="entrypoint_kwargs")
@@ -625,10 +673,16 @@ def _entrypoint_kwargs() -> dict:
     return {"log_config": False}
 
 
+def _create_event_loop() -> asyncio.AbstractEventLoop:
+    """Create a new event loop, using uvloop if available and enabled."""
+    if USE_UVLOOP and uvloop_module is not None:
+        return uvloop_module.new_event_loop()
+    return asyncio.new_event_loop()
+
+
 @pytest.fixture(autouse=loop_autouse)
 def event_loop(
     request: pytest.FixtureRequest,
-    event_loop_policy: asyncio.AbstractEventLoopPolicy,
     caplog: pytest.LogCaptureFixture,
     thread_pool_size: int,
     loop_debug: bool,
@@ -643,75 +697,62 @@ def event_loop(
     forbid_loop_getter_marker = get_marker("forbid_get_event_loop")
     catch_unhandled_marker = get_marker("catch_loop_exceptions")
 
-    exceptions: List[Dict[str, Any]] = []
+    exceptions: list[dict[str, Any]] = []
 
-    def catch_exceptions(_: Any, catched: Dict[str, Any]) -> None:
-        nonlocal exceptions   # noqa
+    def catch_exceptions(_: Any, catched: dict[str, Any]) -> None:
+        nonlocal exceptions  # noqa
         exceptions.append(catched)
 
+    loop = _create_event_loop()
+    loop.set_debug(loop_debug)
+
+    asyncio.set_event_loop(loop)
+    set_current_loop(loop)
+
+    pool = thread_pool_executor(thread_pool_size)
+    loop.set_default_executor(pool)
+
+    if catch_unhandled_marker:
+        loop.set_exception_handler(catch_exceptions)
+
+    if LOG_LEVEL:
+        LOG_LEVEL.set(logging.getLogger().getEffectiveLevel())
+
     try:
-        asyncio.set_event_loop_policy(event_loop_policy)
-
-        loop = asyncio.new_event_loop()
-        loop.set_debug(loop_debug)
-
-        asyncio.set_event_loop(loop)
-        set_current_loop(loop)
-
-        pool = thread_pool_executor(thread_pool_size)
-        loop.set_default_executor(pool)
-
-        if catch_unhandled_marker:
-            loop.set_exception_handler(catch_exceptions)
-
-        if LOG_LEVEL:
-            LOG_LEVEL.set(logging.getLogger().getEffectiveLevel())
-
-        try:
-            with mock_get_event_loop() as event_loop_getter_mock:
-                if forbid_loop_getter_marker:
-                    event_loop_getter_mock.side_effect = partial(
-                        pytest.fail, "get_event_loop is forbidden",
-                    )
-                yield loop
-        finally:
-            if exceptions:
-                logging.error(
-                    "Unhandled exceptions found:\n\n\t%s",
-                    "\n\t".join(
-                        (
-                            "Message: {m}\n\t"
-                            "Future: {f}\n\t"
-                            "Exception: {e}"
-                        ).format(
-                            m=e["message"],
-                            f=repr(e.get("future")),
-                            e=repr(e.get("exception")),
-                        ) for e in exceptions
-                    ),
+        with mock_get_event_loop() as event_loop_getter_mock:
+            if forbid_loop_getter_marker:
+                event_loop_getter_mock.side_effect = partial(
+                    pytest.fail,
+                    "get_event_loop is forbidden",
                 )
-                pytest.fail("Unhandled exceptions found. See logs.")
-
-            basic_config(
-                log_format="plain",
-                stream=sys.stderr,
+            yield loop
+    finally:
+        if exceptions:
+            logging.error(
+                "Unhandled exceptions found:\n\n\t%s",
+                "\n\t".join(
+                    ("Message: {m}\n\tFuture: {f}\n\tException: {e}").format(
+                        m=e["message"],
+                        f=repr(e.get("future")),
+                        e=repr(e.get("exception")),
+                    )
+                    for e in exceptions
+                ),
             )
+            pytest.fail("Unhandled exceptions found. See logs.")
 
-            if loop.is_closed():
-                return
+        basic_config(
+            log_format="plain",
+            stream=sys.stderr,
+        )
 
+        if not loop.is_closed():
             with suppress(Exception):
                 loop.run_until_complete(loop.shutdown_asyncgens())
             with suppress(Exception):
                 loop.close()
-    finally:
-        asyncio.set_event_loop_policy(asyncio.DefaultEventLoopPolicy())
 
-
-@pytest.fixture
-def loop(event_loop: asyncio.AbstractEventLoop) -> asyncio.AbstractEventLoop:
-    warnings.warn("fixture `loop` is deprecated, use `event_loop` instead")
-    return event_loop
+        asyncio.set_event_loop(None)
 
 
 @pytest.fixture(autouse=loop_autouse)
@@ -736,17 +777,6 @@ async def entrypoint(
         yield ep
 
 
-def get_unused_port(*args: Any) -> int:
-    warnings.warn(
-        (
-            "Do not use get_unused_port directly, use fixture "
-            "'aiomisc_unused_port_factory'"
-        ),
-        DeprecationWarning, stacklevel=2,
-    )
-    return unused_port(*args)
-
-
 class PortSocket(NamedTuple):
     port: int
     socket: socket.socket
@@ -754,9 +784,11 @@ class PortSocket(NamedTuple):
 
 @pytest.fixture
 def aiomisc_socket_factory(
-    request: pytest.FixtureRequest, localhost: str,
+    request: pytest.FixtureRequest,
+    localhost: str,
 ) -> Callable[..., PortSocket]:
-    """ Returns a """
+    """Returns a"""
+
     def factory(*args: Any, **kwargs: Any) -> PortSocket:
         sock = bind_socket(*args, address=localhost, port=0, **kwargs)
         port = sock.getsockname()[1]
@@ -765,6 +797,7 @@ def aiomisc_socket_factory(
         request.addfinalizer(sock.close)
 
         return PortSocket(port=port, socket=sock)
+
     return factory
 
 
@@ -773,7 +806,7 @@ class SocketWrapper(abc.ABC):
     port: int
 
     def __init__(self, *args: Any):
-        self._socket_args: Tuple[Any, ...] = args
+        self._socket_args: tuple[Any, ...] = args
         self.address: str = ""
         self.port: int = 0
 
@@ -781,6 +814,7 @@ class SocketWrapper(abc.ABC):
     def prepare(self, address: str) -> None:
         raise NotImplementedError
 
+    @abc.abstractmethod
     def close(self) -> None:
         pass
 
@@ -809,12 +843,15 @@ class SocketWrapperUnix(SocketWrapper):
 
 
 class SocketWrapperWindows(SocketWrapper):
+    def close(self) -> None:
+        pass
+
     def prepare(self, address: str) -> None:
         self.address = address
         self.port = unused_port(*self._socket_args)
 
 
-socket_wrapper: Type[SocketWrapper]
+socket_wrapper: type[SocketWrapper]
 
 if platform.system() == "Windows":
     socket_wrapper = SocketWrapperWindows
@@ -824,13 +861,15 @@ else:
 
 @pytest.fixture
 def aiomisc_unused_port_factory(
-    request: pytest.FixtureRequest, localhost: str,
+    request: pytest.FixtureRequest,
+    localhost: str,
 ) -> Callable[[], int]:
     def port_factory(*args: Any) -> int:
         wrapper = socket_wrapper(*args)
         wrapper.prepare("::" if ":" in localhost else "0.0.0.0")
         request.addfinalizer(wrapper.close)
         return wrapper.port
+
     return port_factory
 
 

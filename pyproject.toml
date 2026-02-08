@@ -1,12 +1,13 @@
-[tool.poetry]
+[project]
 name = "aiomisc-pytest"
-license = "MIT"
-version = "1.0.8"
+version = "1.4.0"
 description = "pytest integration for aiomisc"
-authors = ["Dmitry Orlov <me@mosquito.su>"]
 readme = "README.md"
-packages = [{include = "aiomisc_pytest.py"}]
-keywords=["pytest", "aiomisc"]
+license = "MIT"
+authors = [
+    {name = "Dmitry Orlov", email = "me@mosquito.su"}
+]
+keywords = ["pytest", "aiomisc"]
 classifiers = [
     "Environment :: Plugins",
     "Framework :: Pytest",
@@ -25,32 +26,36 @@ classifiers = [
     "Topic :: Software Development :: Libraries",
     "Topic :: Software Development",
 ]
+requires-python = ">=3.10"
+dependencies = [
+    "pytest>=8.4",
+    "aiomisc>=17",
+]
 
-[tool.poetry.dependencies]
-python = "^3.10"
-pytest = "^8.4"
-aiomisc = ">=17"
+[project.optional-dependencies]
+uvloop = ["uvloop>=0.21"]
 
-[tool.poetry.group.uvloop.dependencies]
-uvloop = "^0.21"
-
-[tool.poetry.group.dev.dependencies]
-pylama = "^8.4.1"
-mypy = "^1.0.0"
-pytest-cov = "^4.0.0"
-setuptools = "^69.5.1"
-
-[build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
-
-[tool.poetry.plugins.pytest11]
+[project.entry-points.pytest11]
 aiomisc = "aiomisc_pytest"
 
-[tool.poem-plugins.version]
-provider = "git"
-update_pyproject = true
-write_version_file = false
+[dependency-groups]
+dev = [
+    "ruff>=0.9",
+    "mypy>=1.0.0",
+    "pytest-cov>=4.0.0",
+]
+uvloop = ["uvloop>=0.21"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["."]
+only-include = ["aiomisc_pytest.py"]
+
+[tool.hatch.build.targets.sdist]
+only-include = ["aiomisc_pytest.py", "README.md", "COPYING", "pyproject.toml"]
 
 [tool.mypy]
 check_untyped_defs = true
@@ -67,3 +72,32 @@ warn_redundant_casts = true
 warn_unused_configs = true
 warn_unused_ignores = true
 files = ["aiomisc_pytest.py"]
+
+[[tool.mypy.overrides]]
+module = "uvloop"
+ignore_missing_imports = true
+
+[tool.ruff]
+line-length = 80
+target-version = "py310"
+
+[tool.ruff.lint]
+select = [
+    "E",      # pycodestyle errors
+    "W",      # pycodestyle warnings
+    "F",      # pyflakes
+    "I",      # isort
+    "UP",     # pyupgrade
+    "B",      # flake8-bugbear
+    "C4",     # flake8-comprehensions
+    "PIE",    # flake8-pie
+    "RET",    # flake8-return
+    "SIM",    # flake8-simplify
+]
+ignore = [
+    "E252",   # missing whitespace around parameter equals
+    "E501",   # line too long (handled by formatter)
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["aiomisc_pytest"]

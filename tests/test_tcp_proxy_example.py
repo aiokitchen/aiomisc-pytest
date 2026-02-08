@@ -1,15 +1,15 @@
 import asyncio
 import time
 
-import pytest
-
 import aiomisc
+import pytest
 
 
 class EchoServer(aiomisc.service.TCPServer):
     async def handle_client(
-            self, reader: asyncio.StreamReader,
-            writer: asyncio.StreamWriter,
+        self,
+        reader: asyncio.StreamReader,
+        writer: asyncio.StreamWriter,
     ):
         chunk = await reader.read(65534)
         while chunk:
@@ -52,7 +52,7 @@ async def test_proxy_client_close(proxy):
     assert reader.at_eof()
 
 
-async def test_proxy_client_slow(proxy, loop):
+async def test_proxy_client_slow(proxy, event_loop):
     read_delay = 0.1
     write_delay = 0.2
 
@@ -78,7 +78,6 @@ async def test_proxy_client_with_processor(proxy):
     proxy.set_content_processors(
         # Process data from client to server
         lambda _: processed_request,
-
         # Process data from server to client
         lambda chunk: chunk[::-1],
     )

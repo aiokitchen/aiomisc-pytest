@@ -1,6 +1,6 @@
 [project]
 name = "aiomisc-pytest"
-version = "1.0.8"
+version = "1.4.0"
 description = "pytest integration for aiomisc"
 readme = "README.md"
 license = "MIT"
@@ -72,6 +72,10 @@ warn_redundant_casts = true
 warn_unused_configs = true
 warn_unused_ignores = true
 files = ["aiomisc_pytest.py"]
+
+[[tool.mypy.overrides]]
+module = "uvloop"
+ignore_missing_imports = true
 
 [tool.ruff]
 line-length = 80

@@ -18,7 +18,7 @@ wheels = [
 
 [[package]]
 name = "aiomisc-pytest"
-version = "1.0.8"
+version = "1.4.0"
 source = { editable = "." }
 dependencies = [
     { name = "aiomisc" },

@@ -1,10 +1,8 @@
 import pytest
-
 from aiomisc import entrypoint
 
 
 class TestSessionScopeAsyncGenFixture:
-
     @pytest.fixture(scope="session")
     def event_loop(self):
         with entrypoint() as loop:

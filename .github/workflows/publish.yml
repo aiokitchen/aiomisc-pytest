@@ -11,29 +11,24 @@ jobs:
 
     steps:
 
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
 
       - name: Setup python3.12
-        uses: actions/setup-python@v2
-        with:
-          python-version: "3.12"
+        run: uv python install 3.12
 
       - name: Resetting git to master
         run: git reset --hard master
 
-      - name: Resetting git to master
+      - name: Fetch git tags
         run: git fetch --unshallow --tags || true
 
-      - name: Install poetry
-        run: python3 -m pip install poetry
-
-      - name: Install poem-plugins
-        run: poetry self add poem-plugins
-
-      - name: Install package
-        run: poetry install
+      - name: Build package
+        run: uv build
 
       - name: Publishing to pypi
-        run: poetry publish --build
+        run: uv publish
         env:
-          POETRY_PYPI_TOKEN_PYPI: ${{ secrets.PYPI_TOKEN }}
+          UV_PUBLISH_TOKEN: ${{ secrets.PYPI_TOKEN }}

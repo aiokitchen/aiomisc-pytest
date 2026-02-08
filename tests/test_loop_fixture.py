@@ -1,11 +1,11 @@
 import asyncio
 import logging
 import socket
-from typing import Callable
+from collections.abc import Callable
 
 import pytest
-
 from aiomisc import Service
+
 from aiomisc_pytest import PortSocket
 
 
@@ -17,15 +17,15 @@ class _TestService(Service):
 
 
 @pytest.fixture()
-async def async_sleep(loop):
-    f = loop.create_future()
-    loop.call_soon(f.set_result, True)
+async def async_sleep(event_loop):
+    f = event_loop.create_future()
+    event_loop.call_soon(f.set_result, True)
     return await f
 
 
 @pytest.fixture()
-def service(loop: asyncio.AbstractEventLoop):
-    return _TestService(loop_on_init=loop)
+def service(event_loop: asyncio.AbstractEventLoop):
+    return _TestService(loop_on_init=event_loop)
 
 
 @pytest.fixture()
@@ -35,24 +35,24 @@ def services(service: _TestService, async_sleep):
 
 async def test_loop_fixture(
     service: _TestService,
-    loop: asyncio.AbstractEventLoop,
+    event_loop: asyncio.AbstractEventLoop,
 ):
-    assert service.loop is service.loop_on_init is loop
+    assert service.loop is service.loop_on_init is event_loop
 
 
 @pytest.fixture
-async def yield_fixture(loop):
+async def yield_fixture(event_loop):
     logging.info("Setup")
 
-    f = loop.create_future()
-    loop.call_later(0, f.set_result, True)
+    f = event_loop.create_future()
+    event_loop.call_later(0, f.set_result, True)
     await f
 
     try:
         yield True
     finally:
-        f = loop.create_future()
-        loop.call_later(0, f.set_result, True)
+        f = event_loop.create_future()
+        event_loop.call_later(0, f.set_result, True)
         await f
 
         logging.info("Teardown")

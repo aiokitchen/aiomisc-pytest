@@ -2,14 +2,14 @@ import asyncio
 import hashlib
 import time
 
-import pytest
-
 import aiomisc
+import pytest
 
 
 class HashServer(aiomisc.service.TCPServer):
     async def handle_client(
-        self, reader: asyncio.StreamReader,
+        self,
+        reader: asyncio.StreamReader,
         writer: asyncio.StreamWriter,
     ):
         hasher = hashlib.md5()
@@ -31,8 +31,9 @@ def server_port(aiomisc_unused_port_factory) -> int:
 
 @pytest.fixture()
 def service(
-    loop: asyncio.AbstractEventLoop,
-    server_port, localhost,
+    event_loop: asyncio.AbstractEventLoop,
+    server_port,
+    localhost,
 ) -> HashServer:
     return HashServer(port=server_port, address=localhost)
 
@@ -74,7 +75,7 @@ async def test_proxy_client_close(proxy):
     assert reader.at_eof()
 
 
-async def test_proxy_client_slow(proxy, loop):
+async def test_proxy_client_slow(proxy, event_loop):
     delay = 0.1
     proxy.set_delay(delay, delay)
 

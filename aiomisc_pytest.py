@@ -1,6 +1,6 @@
 # Re-export everything from aiomisc.pytest
 from aiomisc.pytest import *  # noqa: F401, F403
-from aiomisc.pytest import __all__
+from aiomisc.pytest import __all__  # noqa: F401
 
 import pytest
 

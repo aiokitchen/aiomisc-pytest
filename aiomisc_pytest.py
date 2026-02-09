@@ -1,8 +1,8 @@
+import pytest
+
 # Re-export everything from aiomisc.pytest
 from aiomisc.pytest import *  # noqa: F401, F403
 from aiomisc.pytest import __all__  # noqa: F401
-
-import pytest
 
 
 # Pytest plugin hooks (must be here for pytest to find them via entry point)

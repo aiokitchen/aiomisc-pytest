@@ -1,6 +1,6 @@
 [project]
 name = "aiomisc-pytest"
-version = "1.4.0"
+version = "2.0.0"
 description = "pytest integration for aiomisc"
 readme = "README.md"
 license = "MIT"
@@ -19,17 +19,16 @@ classifiers = [
     "Operating System :: POSIX",
     "Programming Language :: Python :: 3 :: Only",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Topic :: Software Development :: Libraries",
     "Topic :: Software Development",
 ]
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 dependencies = [
     "pytest>=8.4",
-    "aiomisc>=17",
+    "aiomisc>=18",
 ]
 
 [project.optional-dependencies]

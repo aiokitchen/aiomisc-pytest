@@ -1,7 +1,7 @@
 aiomisc pytest plugin
 =====================
 
-This package contains a plugin for pytest.
+This package is a pytest plugin that provides fixtures and utilities from `aiomisc.pytest` for testing async code.
 
 ## Installation
 
@@ -9,13 +9,29 @@ This package contains a plugin for pytest.
 # pip install aiomisc-pytest
 ```
 
+## Architecture
+
+This package serves as a pytest plugin entry point for the `aiomisc.pytest` module.
+
+All fixtures and utilities are re-exported from `aiomisc.pytest`:
+- `event_loop`, `entrypoint`, `services`
+- `aiomisc_unused_port`, `aiomisc_unused_port_factory`
+- `tcp_proxy`, `localhost`
+- And more...
+
+The pytest hooks (`pytest_configure`, `pytest_addoption`) are defined in this
+package because pytest discovers plugins through entry points. The plugin is
+registered via the `pytest11` entry point in `pyproject.toml`.
+
+**Requires:** `aiomisc >= 18`
+
 ## Basic usage
 
 Simple usage example:
 
 ```python
 async def test_sample(event_loop):
-    f = event_loop.crete_future()
+    f = event_loop.create_future()
     event_loop.call_soon(f.set_result, True)
     assert await f
 ```
@@ -30,7 +46,7 @@ import pytest
 
 
 @pytest.fixture
-async def my_fixture(loop):
+async def my_fixture(event_loop):
     await asyncio.sleep(0)
 
     # Requires python 3.6+
@@ -138,14 +154,14 @@ import aiomisc
 import pytest
 
 
-class SimpleServie(aiomisc.Service):
+class SimpleService(aiomisc.Service):
     async def start(self) -> None:
         pass
 
     
 @pytest.fixture
 def services():
-    return [SimpleServie()]
+    return [SimpleService()]
 ```
 
 ## Event loop policy overriding
